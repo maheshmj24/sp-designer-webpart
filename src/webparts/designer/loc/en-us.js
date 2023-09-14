@@ -4,7 +4,7 @@ define([], function () {
     "BasicGroupName": "Configuration",
     "ImageSourceFieldLabel": "Image Source",
     "ShowDesignerLabel": "Show Designer",
-    "uploadToStyleLibraryLabel": "Upload to Style Library",
+    "uploadToDocLibraryLabel": "Upload to Style Library",
     "AppLocalEnvironmentSharePoint": "The app is running on your local environment as SharePoint web part",
     "AppLocalEnvironmentTeams": "The app is running on your local environment as Microsoft Teams app",
     "AppLocalEnvironmentOffice": "The app is running on your local environment in office.com",

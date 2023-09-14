@@ -20,11 +20,11 @@
 }
 
 .miniApp {
-    width: 726px;
+    // width: 726px;
     height: 80vh;
     resize: both;
     overflow: hidden;
-    visibility: hidden;
+    display: none;
 }
 
 .fullApp {
@@ -34,8 +34,8 @@
     right: 0;
     bottom: 0;
     padding: 40px;
-    background-color: black;
-    visibility: hidden;
+    background-color: rgba(0, 0, 0, 0);
+    display: none;
 }
 
 .designerImage {
