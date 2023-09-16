@@ -370,7 +370,7 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
             disableEmbeddedCSPEnforcement: true,
             enableSandboxing: true,
             insertMode: true,
-            hideSizeSelector: true,
+            hideSizeSelector: false,
             preferredImageOutputFormat: "jpg",
             useEnterpriseTOULink: true,
             viewConfig: {
