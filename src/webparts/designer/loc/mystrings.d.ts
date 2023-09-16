@@ -3,7 +3,7 @@ declare interface IDesignerWebPartStrings {
     BasicGroupName: string;
     ImageSourceFieldLabel: string;
     ShowDesignerLabel: string;
-    uploadToStyleLibraryLabel: string;
+    uploadToDocLibraryLabel: string;
     AppLocalEnvironmentSharePoint: string;
     AppLocalEnvironmentTeams: string;
     AppLocalEnvironmentOffice: string;

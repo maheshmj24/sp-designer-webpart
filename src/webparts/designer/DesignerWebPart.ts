@@ -29,13 +29,21 @@ import { IDesignerProps } from "./components/IDesignerProps";
 export interface IDesignerWebPartProps {
     imageSrc: string;
     showDesigner: boolean;
-    uploadToStyleLibrary: boolean;
+    uploadToDocLibrary: boolean;
+}
+
+enum DesignerWebPartProperties {
+    imageSrc = "imageSrc",
+    showDesigner = "showDesigner",
+    uploadToDocLibrary = "uploadToDocLibrary",
 }
 
 export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebPartProps> {
     private _isDarkTheme: boolean = false;
     private _environmentMessage: string = "";
     private _sp: SPFI;
+    private _miniApp: DesignerMini;
+    private _fullApp: EmbeddedDesignerApp;
 
     public render(): void {
         const element: React.ReactElement<IDesignerProps> = React.createElement(
@@ -43,7 +51,6 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
             {
                 imageSrc: this.properties.imageSrc,
                 showDesigner: this.properties.showDesigner,
-                createMiniApp: this.createMiniApp,
                 isDarkTheme: this._isDarkTheme,
                 environmentMessage: this._environmentMessage,
                 hasTeamsContext: !!this.context.sdks.microsoftTeams,
@@ -149,8 +156,8 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
                                     text: strings.ShowDesignerLabel,
                                     checked: false,
                                 }),
-                                PropertyPaneCheckbox("uploadToStyleLibrary", {
-                                    text: strings.uploadToStyleLibraryLabel,
+                                PropertyPaneCheckbox("uploadToDocLibrary", {
+                                    text: strings.uploadToDocLibraryLabel,
                                     checked: false,
                                 }),
                                 PropertyPaneHorizontalRule(),
@@ -173,21 +180,39 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
         newValue: any
     ): void {
         if (propertyPath === "imageSrc" && newValue) {
-            this.properties.imageSrc = newValue;
-            this.render(); // Re-render the web part to reflect the change
+            this.updatePropertyPane(
+                DesignerWebPartProperties.imageSrc,
+                newValue
+            );
         }
         if (propertyPath === "showDesigner" && newValue) {
             if (newValue === true) {
-                this.properties.imageSrc = "";
+                this.updatePropertyPane(DesignerWebPartProperties.imageSrc, "");
+                this.createMiniApp();
                 this.toggleImageVisibility(false);
-                this.render();
+            } else {
+                this.closeMiniApp();
             }
         }
     }
 
     // Update the property pane field value
-    private updateImageSourceProperty = (imageSrc: string): void => {
-        this.properties.imageSrc = imageSrc;
+
+    private updatePropertyPane = (
+        propertyPath: DesignerWebPartProperties,
+        newValue: string
+    ): void => {
+        switch (propertyPath) {
+            case DesignerWebPartProperties.imageSrc:
+                this.properties.imageSrc = newValue;
+                break;
+            case DesignerWebPartProperties.showDesigner:
+                this.properties.showDesigner = newValue === "true";
+                break;
+            case DesignerWebPartProperties.uploadToDocLibrary:
+                this.properties.uploadToDocLibrary = newValue === "true";
+                break;
+        }
         this.context.propertyPane.refresh(); // Trigger a property pane refresh
         this.render();
     };
@@ -244,7 +269,7 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
         try {
             const media = data.media;
             let imageSource = "";
-            if (this.properties.uploadToStyleLibrary) {
+            if (this.properties.uploadToDocLibrary) {
                 // Upload the file to the Site Assets library
                 const fileExtension = data.mimeType.split("/")[1];
                 const fileName = `DesignerExport_${Guid.newGuid().toString()}.${fileExtension}`;
@@ -262,13 +287,14 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
                 imageSource = `data:${data.mimeType};base64,${base64String}`;
             }
 
-            this.updateImageSourceProperty(imageSource);
+            // Update the property pane value
+            this.updatePropertyPane(
+                DesignerWebPartProperties.imageSrc,
+                imageSource
+            );
 
             // Show the image
             this.toggleImageVisibility(true);
-
-            // Update the property pane value
-            // props.updateImageSourceProperty(imageSource);
         } catch (error) {
             console.log("Error while handling the done event:", error);
         }
@@ -278,7 +304,8 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
         const designerFullContainer = document.getElementById(
             "full-container"
         ) as HTMLDivElement;
-        const designerFullApp = new EmbeddedDesignerApp({
+        designerFullContainer.style.display = "block";
+        this._fullApp = new EmbeddedDesignerApp({
             baseAppURL: new URL("https://designer.microsoft.com"),
             clientName: "MiniTestApp",
             clientId: "uuid-1234",
@@ -297,28 +324,30 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
             hostScenario: "TestApp-HostScenario",
         });
         const closeApp = (): void => {
-            designerFullApp.destroy();
-            designerFullContainer.style.visibility = "hidden";
+            this._fullApp.destroy();
+            designerFullContainer.style.display = "none";
+
+            // Close the mini app
+            this.closeMiniApp();
         };
-        designerFullApp.on("done", async (data: DesignerMiniDoneEventData) => {
+        this._fullApp.on("done", async (data: DesignerMiniDoneEventData) => {
             await this.doneHandler(data);
             closeApp();
         });
-        designerFullApp.on("cancel", () => {
+        this._fullApp.on("cancel", () => {
             closeApp();
         });
-        designerFullApp.initialize().catch((error: any) => {
+        this._fullApp.initialize().catch((error: any) => {
             console.error(error);
         });
-        designerFullContainer.style.visibility = "visible";
     };
 
     private createMiniApp = (): void => {
         const designerMiniContainer = document.getElementById(
             "mini-container"
         ) as HTMLDivElement;
-
-        const designerMiniApp = new DesignerMini({
+        designerMiniContainer.style.display = "block";
+        this._miniApp = new DesignerMini({
             // refer to our API docs on the DesignerMini Class to adjust the settings here.
             miniURL: new URL(
                 "https://cdn.designerapp.osi.office.net/mini-app/index.html"
@@ -341,7 +370,7 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
             disableEmbeddedCSPEnforcement: true,
             enableSandboxing: true,
             insertMode: true,
-            hideSizeSelector: true,
+            hideSizeSelector: false,
             preferredImageOutputFormat: "jpg",
             useEnterpriseTOULink: true,
             viewConfig: {
@@ -350,26 +379,31 @@ export default class DesignerWebPart extends BaseClientSideWebPart<IDesignerWebP
             },
         });
 
-        const closeApp = (): void => {
-            designerMiniApp.destroy();
-            designerMiniContainer.style.visibility = "hidden";
-        };
-
         // Initialize with optional design suggestions
-        designerMiniApp.initialize().catch((error: any) => {
+        this._miniApp.initialize().catch((error: any) => {
             console.error(error);
         });
 
-        designerMiniApp.on("done", async (data: DesignerMiniDoneEventData) => {
+        this._miniApp.on("done", async (data: DesignerMiniDoneEventData) => {
             await this.doneHandler(data);
-            closeApp();
+            this.closeMiniApp();
         });
 
-        designerMiniApp.on("customize", (data: ForwardedAppConfig) => {
+        this._miniApp.on("customize", (data: ForwardedAppConfig) => {
             this.createFullApp(data);
         });
+    };
 
-        designerMiniContainer.style.visibility = "visible";
+    private closeMiniApp = (): void => {
+        const designerMiniContainer = document.getElementById(
+            "mini-container"
+        ) as HTMLDivElement;
+        this._miniApp.destroy();
+        this.updatePropertyPane(
+            DesignerWebPartProperties.showDesigner,
+            "false"
+        );
+        designerMiniContainer.style.display = "none";
     };
 
     private toggleImageVisibility = (show: boolean): void => {

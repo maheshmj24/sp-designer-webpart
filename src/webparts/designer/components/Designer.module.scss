@@ -20,22 +20,23 @@
 }
 
 .miniApp {
-    width: 726px;
+    // width: 726px;
     height: 80vh;
     resize: both;
     overflow: hidden;
-    visibility: hidden;
+    display: none;
 }
 
 .fullApp {
     position: fixed;
+    z-index: 10; /* Sit on top */
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     padding: 40px;
-    background-color: black;
-    visibility: hidden;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
 }
 
 .designerImage {

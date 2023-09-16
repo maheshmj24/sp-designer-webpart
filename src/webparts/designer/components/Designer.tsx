@@ -13,23 +13,14 @@ const Designer = (props: IDesignerProps): JSX.Element => {
             ) as HTMLDivElement;
             imageContainer.style.visibility = "visible";
         }
-
-        if (props.showDesigner) {
-            props.createMiniApp();
-        }
-    }, [props.imageSrc, props.showDesigner]);
+    }, [props.imageSrc]);
 
     return (
         <Stack>
-            {props.showDesigner && (
-                <>
-                    {/* <PrimaryButton onClick={props.createMiniApp}>
-                        Open Designer
-                    </PrimaryButton> */}
-                    <div className={styles.miniApp} id='mini-container' />
-                    <div className={styles.fullApp} id='full-container' />
-                </>
-            )}
+            <>
+                <div className={styles.miniApp} id='mini-container' />
+                <div className={styles.fullApp} id='full-container' />
+            </>
 
             <img
                 className={styles.designerImage}
